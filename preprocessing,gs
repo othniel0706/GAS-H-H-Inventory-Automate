@@ -1,0 +1,157 @@
+function preprocessing() {
+
+  /* -------------------------Process as per the Steps to create FF.docx------------------------
+    a. Add the new column at the end with previous month name In master file’s first tab “FI Data Upload”.
+    b. Paste all the values from business file to the new column as per the Inventory type.
+  ----------------------------------------------------------------------------------------------*/
+
+  /* Put link "xlsx" business file sheet link here (Business File here ) 
+  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv 
+  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv */
+  var url = "https://docs.google.com/spreadsheets/d/1cN6rwcBFA_cP0mqxjOJ6XTPbaGcsidW_/edit#gid=782552578"
+  /* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
+
+  var mainGsheetBFile = importXLS(url) // Converted xlsx sheet will be converted into google sheet
+  var spreadsheet = SpreadsheetApp.openById(mainGsheetBFile); // Opens the converted google sheet business file
+
+  console.log("-----------------preprocessing.gs------------------------")
+  var lastCol =  String(spreadsheet.getLastColumn()); // Get last column of the business file
+  console.log(lastCol);
+
+  // Converts column index to column letter which will be required to fetch the last column
+  function columnToLetter(column)
+  {
+    var temp, letter = '';
+    while (column > 0)
+    {
+      temp = (column - 1) % 26;
+      letter = String.fromCharCode(temp + 65) + letter;
+      column = (column - temp - 1) / 26;
+    }
+    return letter;
+  }
+
+  var lastCol_letter = columnToLetter(lastCol); // Converts column index to column letter
+
+  /* ------------------------------------------------------------------------------------
+    b. copy all the values from business file to the new column as per the Inventory type.
+  ---------------------------------------------------------------------------------------- */
+
+  var lst_data1 = [];
+  lst_data1.push(spreadsheet.getRange(lastCol_letter+1).getValue())
+  for(i=0;i<7;i++){
+    lst_data1.push(spreadsheet.getRange(lastCol_letter+(33+i)).getValue())
+  }
+  for(i=0;i<5;i++){
+    lst_data1.push(spreadsheet.getRange(lastCol_letter+(41+i)).getValue())
+  }
+  lst_data1.push(spreadsheet.getRange(lastCol_letter+47).getValue())
+
+  /* --------------------------------------------------------------------------------------
+    b. paste all the values from business file to the new column as per the Inventory type.
+  ---------------------------------------------------------------------------------------- */
+
+  var spreadsheet_master = SpreadsheetApp.openByUrl("https://docs.google.com/spreadsheets/d/1Ha9ZcUyEEmyyk6T4NLUmsj6pfQ90HPO3e-4tUxwBpas/edit#gid=1289838104"); 
+
+  function paste_master_fi(lastCol_master){
+      var lastCol_master_letter = columnToLetter(lastCol_master);
+
+      var row_start = 3;
+
+      if (spreadsheet_master.getActiveSheet().getName() == "FI data"){
+        row_start = 2;
+      }
+      for(i=0;i<14;i++){
+        spreadsheet_master.getRange(lastCol_master_letter+(row_start+i)).setValue(lst_data1[i])
+      }
+  }
+  
+  var lastCol_master = String(spreadsheet_master.getLastColumn());
+  if (lastCol_master < lastCol){
+      spreadsheet_master.insertColumnAfter(lastCol_master);
+      lastCol_master++;
+      paste_master_fi(lastCol_master);
+  }
+  else{
+    paste_master_fi(lastCol_master)
+  }
+
+  /* -------------------------------------------------------------------------------------
+    c. Copy that column in 3rd tab ”FI data” in new column.
+  ---------------------------------------------------------------------------------------*/
+
+  spreadsheet_master.setActiveSheet(spreadsheet_master.getSheetByName('FI data'), true);
+
+  var chk_val_mon = lst_data1[0];
+  chk_val_mon = String(chk_val_mon).substring(5,)
+
+  var lastCol_FIdata = String(spreadsheet_master.getLastColumn());
+  var chk_val = String(spreadsheet_master.getRange(columnToLetter(lastCol_FIdata)+2).getValue())  
+
+  if(chk_val.includes(chk_val_mon)){
+  }else{
+    spreadsheet_master.insertColumnAfter(lastCol_FIdata);
+    lastCol_FIdata++;
+    paste_master_fi(lastCol_FIdata);
+  }
+
+  /* -----------------------------------------------------------------------------------
+    d. Now in 2nd tab “BI Data Upload”, select last column and drag it in next column.
+  -------------------------------------------------------------------------------------- */
+
+  // Check if values exist, if so then dont copy again
+
+  var spreadsheet_master_BI_Data_Upload = SpreadsheetApp.openByUrl("https://docs.google.com/spreadsheets/d/1Ha9ZcUyEEmyyk6T4NLUmsj6pfQ90HPO3e-4tUxwBpas/edit#gid=1289838104"); 
+  spreadsheet_master_BI_Data_Upload.setActiveSheet(spreadsheet_master_BI_Data_Upload.getSheetByName('BI Data Upload'), true);
+  var max_cols_BI_Data_Upload = spreadsheet_master_BI_Data_Upload.getLastColumn();
+  var second_last_col_BI_data_upload = columnToLetter(spreadsheet_master_BI_Data_Upload.getLastColumn());
+  chk_val = String(spreadsheet_master_BI_Data_Upload.getRange(second_last_col_BI_data_upload+2).getValue())
+
+  if (chk_val.includes(chk_val_mon)){
+  }else{
+    spreadsheet_master_BI_Data_Upload.insertColumnsAfter(spreadsheet_master_BI_Data_Upload.getLastColumn(),1);  
+    var lastCol_BI_data_upload = columnToLetter(Number(spreadsheet_master_BI_Data_Upload.getLastColumn())+1);
+
+    spreadsheet_master_BI_Data_Upload.getRange(lastCol_BI_data_upload+2).setValue(lst_data1[0]);
+
+    for(i=0; i<10; i++){
+      spreadsheet_master_BI_Data_Upload.getRange(second_last_col_BI_data_upload+(3+i)).copyTo(spreadsheet_master_BI_Data_Upload.getRange(lastCol_BI_data_upload+(3+i)),  SpreadsheetApp.CopyPasteType.PASTE_VALUES);
+    }
+  }
+
+  var idfolder = "1URq9e54zrtdEzkCV0AINQ6l65gvlaFiE"
+  // emptyFolder(idfolder) // Delete previous files in the Flat File Folder (currently commented coz of access issues)
+
+  console.log("-----------------BIinTransit.gs------------------------")
+ 
+  biintransit();
+
+  console.log("-----------------BIonHand.gs------------------------")
+
+  biionhand();
+
+  console.log("-----------------FIbalances.gs------------------------")
+
+  fibalances();
+
+  console.log(">>>>Flat files can be found on this link below<<<<<<")
+  console.log("https://drive.google.com/drive/u/0/folders/1URq9e54zrtdEzkCV0AINQ6l65gvlaFiE")
+
+  var bsFolderId = "1ImxMnRd8XZ7CX5gF1NY7OCf84x9y3V8j"
+  // emptyFolder(bsFolderId) // Delete's temporary business files in Business Folder (currently commented coz of access issues)
+
+}
+
+function emptyFolder(folderId) {
+
+    const folder = DriveApp.getFolderById(folderId);
+  
+    while (folder.getFiles().hasNext()) {
+      const file = folder.getFiles().next();
+      file.setTrashed(true);
+      // Delete File
+      //Drive.Files.remove(file.getId()) // This deletes files permanantly does not put in trash
+  }
+
+}
