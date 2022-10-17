@@ -8,7 +8,7 @@ function preprocessing() {
   /* Put link "xlsx" business file sheet link here (Business File here ) 
   vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv 
   vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv */
-  var url = "https://docs.google.com/spreadsheets/d/1cN6rwcBFA_cP0mqxjOJ6XTPbaGcsidW_/edit#gid=782552578"
+  var url = "https://docs.google.com/spreadsheets/d/1XQcHltHJaaLfYRfjkQZ4Psf9X9S9xnk1/edit#gid=989833543"
   /* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
 
@@ -33,6 +33,7 @@ function preprocessing() {
   }
 
   var lastCol_letter = columnToLetter(lastCol); // Converts column index to column letter
+  console.log(lastCol);
 
   /* ------------------------------------------------------------------------------------
     b. copy all the values from business file to the new column as per the Inventory type.
@@ -47,6 +48,11 @@ function preprocessing() {
     lst_data1.push(spreadsheet.getRange(lastCol_letter+(41+i)).getValue())
   }
   lst_data1.push(spreadsheet.getRange(lastCol_letter+47).getValue())
+
+  console.log(lst_data1);
+  var b_file_current_month = lst_data1[0];
+  var b_file_current_month = b_file_current_month.substring(5, 8);
+  console.log("Business File Current Month", b_file_current_month);
 
   /* --------------------------------------------------------------------------------------
     b. paste all the values from business file to the new column as per the Inventory type.
@@ -64,17 +70,25 @@ function preprocessing() {
       }
       for(i=0;i<14;i++){
         spreadsheet_master.getRange(lastCol_master_letter+(row_start+i)).setValue(lst_data1[i])
+        console.log(lastCol_master_letter+(row_start+i));
+        console.log(lst_data1[i]);
       }
   }
-  
+
   var lastCol_master = String(spreadsheet_master.getLastColumn());
-  if (lastCol_master < lastCol){
-      spreadsheet_master.insertColumnAfter(lastCol_master);
-      lastCol_master++;
-      paste_master_fi(lastCol_master);
+  var m_file_current_month = String(spreadsheet_master.getRange(columnToLetter(lastCol_master)+3).getValue()).substring(4, 7);
+  console.log("Master File Current Month", m_file_current_month);
+  
+
+  if (b_file_current_month == m_file_current_month){
+    console.log("Current Month Data Already Present. Nothing to insert")
+    throw new Error();
   }
   else{
-    paste_master_fi(lastCol_master)
+    console.log("Inserting ", b_file_current_month, " month into FI Data Upload")
+    spreadsheet_master.insertColumnAfter(lastCol_master);
+    lastCol_master++;
+    paste_master_fi(lastCol_master);
   }
 
   /* -------------------------------------------------------------------------------------
